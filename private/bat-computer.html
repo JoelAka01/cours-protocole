@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bat Computer</title>
+</head>
+<body>
+
+<h1>Bat Computer</h1>
+
+<div id="welcome"></div>
+
+<div id="gadgets"></div>
+<script>
+
+async function loadUser() {
+
+    const response = await fetch("/api/me", {
+        headers: {
+            Authorization: "Basic " + btoa("batman:motdepasse")
+        }
+    });
+
+    const user = await response.json();
+
+    document.getElementById("welcome").innerHTML =
+        `Bienvenue, Justicier ${user.username}`;
+}
+
+loadUser();
+async function loadSecrets() {
+
+    const response = await fetch("/api/secrets", {
+        headers: {
+            Authorization: "Basic " + btoa("batman:motdepasse")
+        }
+    });
+
+    const data = await response.json();
+
+    const container = document.getElementById("gadgets");
+
+    data.forEach(gadget => {
+
+        container.innerHTML += `
+            <div>
+                <h3>${gadget.name}</h3>
+                <p>${gadget.desc}</p>
+            </div>
+        `;
+    });
+}
+
+loadSecrets();
+
+</script>
+
+</body>
+</html>

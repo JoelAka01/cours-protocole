@@ -1,0 +1,26 @@
+{
+  "name": "cours-protocole",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoelAka01/cours-protocole.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JoelAka01/cours-protocole/issues"
+  },
+  "homepage": "https://github.com/JoelAka01/cours-protocole#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.10.0",
+    "express": "^5.2.1"
+  }
+}
