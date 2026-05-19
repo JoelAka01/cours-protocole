@@ -13,13 +13,11 @@
 <div id="gadgets"></div>
 <script>
 
+// Les credentials sont envoyés automatiquement par le navigateur
+// car la page est déjà protégée par Basic Auth (popup native)
 async function loadUser() {
 
-    const response = await fetch("/api/me", {
-        headers: {
-            Authorization: "Basic " + btoa("batman:motdepasse")
-        }
-    });
+    const response = await fetch("/api/me");
 
     const user = await response.json();
 
@@ -30,11 +28,7 @@ async function loadUser() {
 loadUser();
 async function loadSecrets() {
 
-    const response = await fetch("/api/secrets", {
-        headers: {
-            Authorization: "Basic " + btoa("batman:motdepasse")
-        }
-    });
+    const response = await fetch("/api/secrets");
 
     const data = await response.json();
 

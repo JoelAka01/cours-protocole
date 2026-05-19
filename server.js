@@ -29,8 +29,20 @@ CREATE TABLE IF NOT EXISTS reports (
 )
 `).run();
 
-app.use(express.static(path.join(__dirname, 'public')));
+try {
+    db.prepare(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'USER'`).run();
+} catch (e) {
+}
 
+db.prepare(`
+CREATE TABLE IF NOT EXISTS logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    timestamp TEXT DEFAULT (datetime('now'))
+)
+`).run();
+
+const loginAttempts = new Map();
 
 app.get("/register", (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'register.html'));
@@ -42,14 +54,12 @@ app.post("/register", async (req, res) => {
 
     username = username.trim();
 
-    // Vérification mot de passe
     if (password.length < 8) {
         return res.status(400).send("Mot de passe trop court");
     }
 
     try {
 
-        // Hash du mot de passe
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const stmt = db.prepare(`
@@ -63,7 +73,6 @@ app.post("/register", async (req, res) => {
 
     } catch (error) {
 
-        // Username déjà utilisé
         if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
             return res.status(409).send("Nom déjà utilisé");
         }
@@ -80,18 +89,24 @@ async function authMiddleware(req, res, next) {
         return res.status(401).send("Authentification requise");
     }
 
-    // "Basic xxxxx"
     const base64 = authHeader.split(" ")[1];
 
     const decoded = Buffer.from(base64, "base64").toString();
 
-    const [username, password] = decoded.split(":");
+    const [username, ...rest] = decoded.split(":");
+    const password = rest.join(":");
+
+    const attempt = loginAttempts.get(username);
+    if (attempt && attempt.blockedUntil && Date.now() < attempt.blockedUntil) {
+        return res.status(429).send("Trop de tentatives. Réessayez dans 30 secondes.");
+    }
 
     const user = db.prepare(`
         SELECT * FROM users WHERE username = ?
     `).get(username);
 
     if (!user) {
+        recordFailedAttempt(username);
         return res.status(401).send("Utilisateur inconnu");
     }
 
@@ -101,12 +116,27 @@ async function authMiddleware(req, res, next) {
     );
 
     if (!validPassword) {
+        recordFailedAttempt(username);
         return res.status(401).send("Mot de passe incorrect");
     }
+
+    loginAttempts.delete(username);
+
+    db.prepare(`INSERT INTO logs (username) VALUES (?)`).run(username);
 
     req.user = user;
 
     next();
+}
+
+function recordFailedAttempt(username) {
+    const attempt = loginAttempts.get(username) || { attempts: 0, blockedUntil: null };
+    attempt.attempts += 1;
+    if (attempt.attempts >= 5) {
+        attempt.blockedUntil = Date.now() + 30000;
+        attempt.attempts = 0;
+    }
+    loginAttempts.set(username, attempt);
 }
 app.get("/api/secrets", authMiddleware, (req, res) => {
 
@@ -151,6 +181,11 @@ app.get("/bat-computer", authMiddleware, (req, res) => {
         path.join(__dirname, "private", "bat-computer.html")
     );
 
+});
+
+app.get("/logout", (req, res) => {
+    res.setHeader("WWW-Authenticate", "Basic");
+    return res.status(401).send("Déconnecté. Fermez cette fenêtre.");
 });
 
 app.listen(PORT, () => {
