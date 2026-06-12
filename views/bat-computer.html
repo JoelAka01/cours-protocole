@@ -10,32 +10,25 @@
 
 <div id="welcome"></div>
 
+<a href="/auth/logout">Se déconnecter</a>
+
+<h2>Arsenal</h2>
 <div id="gadgets"></div>
+
 <script>
-
-// Les credentials sont envoyés automatiquement par le navigateur
-// car la page est déjà protégée par Basic Auth (popup native)
 async function loadUser() {
-
-    const response = await fetch("/api/me");
-
+    const response = await fetch("/bat-computer/api/me");
     const user = await response.json();
-
     document.getElementById("welcome").innerHTML =
         `Bienvenue, Justicier ${user.username}`;
 }
 
-loadUser();
 async function loadSecrets() {
-
-    const response = await fetch("/api/secrets");
-
+    const response = await fetch("/bat-computer/api/secrets");
     const data = await response.json();
-
     const container = document.getElementById("gadgets");
 
     data.forEach(gadget => {
-
         container.innerHTML += `
             <div>
                 <h3>${gadget.name}</h3>
@@ -45,8 +38,8 @@ async function loadSecrets() {
     });
 }
 
+loadUser();
 loadSecrets();
-
 </script>
 
 </body>
